@@ -1,37 +1,78 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.3.5"></script>
-   <title>Document</title>
+   <!-- Bootstrap CSS -->
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+   
+   <title>Usuário</title>
 </head>
 <body>
    <div id="app">
-      <form action="" method="post">
-         <label>Nome: </label>
-         <input v-model="usuario.nome" type="text">
+      <form>
+         <div class="form-group">
+            <label>Nome: </label>
+            <input v-model="usuario.nome" type="text">
+         </div>
 
-         <label>Senha: </label>
-         <input v-model="usuario.senha" type="password">
-         <button type="button" v-on:click="inserir()">Salvar</button>
+         <div class="form-group">
+            <label>Senha: </label>
+            <input v-model="usuario.senha" type="password">
+         </div>
+
+         <div class="form-group">
+         <label>Perfil: </label>
+            <select v-model="usuario.perfil">
+               <option value="" selected disabled>Escolha</option>
+               <option v-for="perfil in perfis" v-bind:value="perfil">
+                  {{ perfil.descricao }}
+               </option>
+            </select>
+         </div>
+
+         <button class="btn btn-primary" type="button" v-on:click="salvar()">Salvar</button>
+         <button class="btn btn-default" type="button" v-on:click="novo()">Novo</button>
       </form>
-      <ol>
-         <li style="list-style-type: none" v-for="usuario in usuarios">
-				{{ usuario.id }} | {{ usuario.nome }} | {{ usuario.senha }}
-				<button type="button" v-on:click="excluir(usuario)">Excluir</button>
-			</li>
-      </ol>
+
+      <div class="container">
+         <div class="row" style="list-style-type: none" v-for="usuario in usuarios">
+            
+            <div class="col">
+               {{ usuario.id }} 
+            </div>       
+            <div class="col">
+               {{ usuario.nome }} 
+            </div>
+            <div class="col">
+               {{ usuario.perfil.descricao }}         
+            </div>
+
+            <div class="col">
+               <button class="btn btn-danger" type="button" v-on:click="excluir(usuario)">Excluir</button>
+               <button class="btn btn-primary" type="button" v-on:click="editar(usuario)">Editar</button>
+            </div>
+			</div>
+      </div>
    </div>
 </body>
+
 <script>
    var app = new Vue({
       el: '#app',
       data: {
          usuarios: [],
+         perfis: [],
          usuario: {
+            id: '',
             nome:'',
-            senha: ''
+            senha: '',
+            perfil: {
+               id: '',
+               descricao: ''
+            }
          }
       },
       created: function() {
@@ -41,30 +82,65 @@
             },
             error => {
                console.log('Deu merda!!');
-            });
+         });
+        
+         this.$http.get('http://localhost:8080/perfis')
+            .then(response => {
+               this.perfis = response.body;
+            },
+            error => {
+               console.log('Deu merda!!');
+         });
+
       },
+
       methods: {
 		
-			inserir: function() {
-				this.$http.post('http://localhost:8080/usuarios', this.usuario)
-					.then(response => {
-						this.usuarios.push(response.body);
-					},
-					error => {
-						console.log('Deu merda!!');
-         	});
+			salvar: function() {
+            if (this.usuario.id == "") {
+               this.$http.post('http://localhost:8080/usuarios', this.usuario)
+                  .then(response => {
+                     this.usuarios.push(response.body);
+                  },
+                  error => {
+                     console.log('Deu merda!!');
+               });
+            }
+            else {
+               this.$http.put('http://localhost:8080/usuarios', this.usuario)
+                  .then(response => {
+                     this.usuarios.splice(this.index, 1, response.body);
+                  },
+                  error => {
+                     console.log('Deu merda!!');
+               });
+            }
+
+            this.novo();
+
       	},
 
 			excluir: function(usuario) {
-				this.$http.delete(`http://localhost:8080/usuarios/${usuario.id}`)
-					.then(response => {
-						this.usuarios.splice(this.usuarios.indexOf(usuario), 1);
-						console.log('Deu certo!!');;
-					},
-					error => {
-						console.log('Deu merda!!');
-         	});
-      	}
+            if (window.confirm(`Remover o usuario ${usuario.nome}?`)) {
+               this.$http.delete(`http://localhost:8080/usuarios/${usuario.id}`)
+                  .then(response => {
+                     this.usuarios.splice(this.usuarios.indexOf(usuario), 1);
+                     console.log('Deu certo!!');;
+                  },
+                  error => {
+                     console.log('Deu merda!!');
+               });
+            }
+      	},
+
+         editar: function(usuario) {
+            this.index = this.usuarios.indexOf(usuario);
+            this.usuario = Vue.util.extend({}, usuario);
+         },
+
+         novo: function() {
+            this.usuario = {id: '', nome: '', senha: ''};
+         }
 		}
    });
 </script>
