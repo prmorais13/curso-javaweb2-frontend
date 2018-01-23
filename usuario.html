@@ -10,14 +10,17 @@
    <div id="app">
       <form action="" method="post">
          <label>Nome: </label>
-         <input type="text">
+         <input v-model="usuario.nome" type="text">
 
          <label>Senha: </label>
-         <input type="password">
-         <button type="button">Salvar</button>
+         <input v-model="usuario.senha" type="password">
+         <button type="button" v-on:click="inserir()">Salvar</button>
       </form>
       <ol>
-         <li v-for="usuario in usuarios">{{ usuario.nome }} {{ usuario.senha }} {{ usuario.perfil.descricao }}</li>
+         <li style="list-style-type: none" v-for="usuario in usuarios">
+				{{ usuario.id }} | {{ usuario.nome }} | {{ usuario.senha }}
+				<button type="button" v-on:click="excluir(usuario)">Excluir</button>
+			</li>
       </ol>
    </div>
 </body>
@@ -25,18 +28,44 @@
    var app = new Vue({
       el: '#app',
       data: {
-         usuarios: []
+         usuarios: [],
+         usuario: {
+            nome:'',
+            senha: ''
+         }
       },
       created: function() {
          this.$http.get('http://localhost:8080/usuarios')
             .then(response => {
                this.usuarios = response.body;
-               console.log(this.usuarios[0]);
             },
             error => {
                console.log('Deu merda!!');
             });
-      }
+      },
+      methods: {
+		
+			inserir: function() {
+				this.$http.post('http://localhost:8080/usuarios', this.usuario)
+					.then(response => {
+						this.usuarios.push(response.body);
+					},
+					error => {
+						console.log('Deu merda!!');
+         	});
+      	},
+
+			excluir: function(usuario) {
+				this.$http.delete(`http://localhost:8080/usuarios/${usuario.id}`)
+					.then(response => {
+						this.usuarios.splice(this.usuarios.indexOf(usuario), 1);
+						console.log('Deu certo!!');;
+					},
+					error => {
+						console.log('Deu merda!!');
+         	});
+      	}
+		}
    });
 </script>
 </html>
